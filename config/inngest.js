@@ -107,13 +107,14 @@ export const syncUserCreation = inngest.createFunction(
       }
 
       const userData = {
-        _id: id,
+        clerkId: id,
         email,
         name: getFullName(first_name, last_name),
         imageUrl: image_url || "",
       };
 
       console.log("Creating user with:", userData);
+      await connectDB();
       await User.create(userData);
 
       const saved = await User.findById(id).lean();
