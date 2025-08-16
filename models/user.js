@@ -4,11 +4,11 @@ const userSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
     imageUrl: { type: String, required: true },
     cartItems: { type: Object, default: {} },
   },
-  { minimize: false, timestamps: true }
+  { minimize: false }
 );
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);

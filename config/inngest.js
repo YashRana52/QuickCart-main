@@ -5,29 +5,36 @@ import User from "@/models/user";
 export const inngest = new Inngest({ id: "E-commerce" });
 
 // Save user data
-export const syncUserCreation = inngest.createFunction(
-  { id: "sync-user-from-clerk" },
-  { event: "clerk/user.created" },
-  async ({ event }) => {
-    try {
-      const { id, first_name, last_name, email_addresses, image_url } =
-        event.data;
+// export const syncUserCreation = inngest.createFunction(
+//   { id: "sync-user-from-clerk" },
+//   { event: "clerk/user.created" },
+//   async ({ event }) => {
+//     try {
+//       const {
+//         id, // ✅ user ka id (MongoDB _id banega)
+//         first_name,
+//         last_name,
+//         email_addresses,
+//         image_url,
+//       } = event.data;
 
-      const userData = {
-        _id: id,
-        email: email_addresses[0].email_address,
-        name: [first_name, last_name].filter(Boolean).join(" "),
-        imageUrl: image_url,
-      };
+//       const userData = {
+//         _id: id, // yeh hamesha "user_xxx" hoga
+//         email: email_addresses[0]?.email_address,
+//         name: [first_name, last_name].filter(Boolean).join(" "),
+//         imageUrl: image_url,
+//       };
 
-      await connectDB();
-      console.log(" DB Connected. Saving user:", userData);
-      await User.create(userData);
-    } catch (err) {
-      console.error("Error syncing user creation:", err);
-    }
-  }
-);
+//       await connectDB();
+//       console.log("DB Connected. Saving user:", userData);
+
+//       const savedUser = await User.create(userData);
+//       console.log("✅ User saved:", savedUser);
+//     } catch (err) {
+//       console.error("❌ Error syncing user creation:", err.message, err);
+//     }
+//   }
+// );
 
 // Update user
 export const syncUserUpdation = inngest.createFunction(
@@ -64,6 +71,56 @@ export const syncUserDeletion = inngest.createFunction(
       await User.findByIdAndDelete(id);
     } catch (err) {
       console.error("Error syncing user deletion:", err);
+    }
+  }
+);
+
+// Helper to safely get email from Clerk payload
+function getEmail(emailAddresses) {
+  const emailObj = emailAddresses?.[0] || {};
+  return emailObj?.email_address || emailObj?.email || "";
+}
+
+// Helper to build full name
+function getFullName(first, last) {
+  return [first, last].filter(Boolean).join(" ").trim() || "Unnamed User";
+}
+
+// --- create user ---
+export const syncUserCreation = inngest.createFunction(
+  { id: "sync-user-from-clerk" },
+  { event: "clerk/user.created" },
+  async ({ event }) => {
+    try {
+      console.log(
+        "clerk/user.created event:",
+        JSON.stringify(event.data, null, 2)
+      );
+
+      const { id, first_name, last_name, email_addresses, image_url } =
+        event.data;
+
+      const email = getEmail(email_addresses);
+      if (!email) {
+        console.error("Email missing, skipping creation.");
+        return;
+      }
+
+      const userData = {
+        _id: id,
+        email,
+        name: getFullName(first_name, last_name),
+        imageUrl: image_url || "",
+      };
+
+      console.log("Creating user with:", userData);
+      await User.create(userData);
+
+      const saved = await User.findById(id).lean();
+      console.log("Saved in DB:", saved);
+    } catch (err) {
+      console.error("Error in syncUserCreation:", err);
+      throw err;
     }
   }
 );
