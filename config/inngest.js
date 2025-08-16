@@ -53,7 +53,10 @@ export const syncUserUpdation = inngest.createFunction(
       };
 
       await connectDB();
-      await User.findByIdAndUpdate(id, userData, { new: true, upsert: true });
+      await User.findByIdAndUpdate({ clerkId: id }, userData, {
+        new: true,
+        upsert: true,
+      });
     } catch (err) {
       console.error("Error syncing user update:", err);
     }
@@ -68,13 +71,12 @@ export const syncUserDeletion = inngest.createFunction(
     try {
       const { id } = event.data;
       await connectDB();
-      await User.findByIdAndDelete(id);
+      await User.findByIdAndDelete({ clerkId: id });
     } catch (err) {
       console.error("Error syncing user deletion:", err);
     }
   }
 );
-
 // Helper to safely get email from Clerk payload
 function getEmail(emailAddresses) {
   const emailObj = emailAddresses?.[0] || {};
@@ -106,6 +108,16 @@ export const syncUserCreation = inngest.createFunction(
         return;
       }
 
+      await connectDB();
+
+      //  Pehle check karo user exist karta hai ya nahi
+      const existingUser = await User.findOne({ clerkId: id });
+      if (existingUser) {
+        console.log("User already exists:", existingUser.email);
+        return { success: true, message: "User already exists" };
+      }
+
+      //  Agar user exist nahi karta tabhi create karo
       const userData = {
         clerkId: id,
         email,
@@ -113,14 +125,13 @@ export const syncUserCreation = inngest.createFunction(
         imageUrl: image_url || "",
       };
 
-      console.log("Creating user with:", userData);
-      await connectDB();
-      await User.create(userData);
+      console.log("Creating new user:", userData);
+      const newUser = await User.create(userData);
 
-      const saved = await User.findById(id).lean();
-      console.log("Saved in DB:", saved);
+      console.log(" User created:", newUser);
+      return { success: true };
     } catch (err) {
-      console.error("Error in syncUserCreation:", err);
+      console.error("❌ Error in syncUserCreation:", err);
       throw err;
     }
   }

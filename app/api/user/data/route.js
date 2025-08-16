@@ -6,15 +6,25 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
   try {
     const { userId } = getAuth(request);
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
     await connectDB();
 
-    const user = await User.findById(userId);
+    // Clerk userId se find karo
+    const user = await User.findOne({ clerkId: userId });
+
     if (!user) {
       return NextResponse.json({
         success: false,
-        message: "user not found",
+        message: "User not found in DB",
       });
     }
+
     return NextResponse.json({
       success: true,
       user,
