@@ -21,6 +21,7 @@ export const syncUserCreation = inngest.createFunction(
       };
 
       await connectDB();
+      console.log(" DB Connected. Saving user:", userData);
       await User.create(userData);
     } catch (err) {
       console.error("Error syncing user creation:", err);
