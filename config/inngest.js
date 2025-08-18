@@ -150,17 +150,27 @@ export const createUserOrder = inngest.createFunction(
   },
   { event: "order/created" },
   async ({ events }) => {
-    const orders = events.map((event) => {
-      return {
-        userId: event.data.userId,
-        items: event.data.items,
-        amount: event.data.amount,
-        address: event.data.address,
-        date: event.data.date,
-      };
-    });
+    console.log("Incoming events:", JSON.stringify(events, null, 2));
+
+    const orders = events.map((event) => ({
+      userId: event.data.userId,
+      items: event.data.items,
+      amount: event.data.amount,
+      address: event.data.address,
+      date: event.data.date,
+    }));
+
+    console.log("Orders to insert:", orders);
+
     await connectDB();
-    await Order.insertMany(orders);
-    return { success: true, processed: orders.length };
+
+    try {
+      const result = await Order.insertMany(orders);
+      console.log("✅ Orders saved:", result);
+      return { success: true, processed: result.length };
+    } catch (err) {
+      console.error("❌ Order save error:", err.message, err.errors);
+      return { success: false, error: err.message };
+    }
   }
 );

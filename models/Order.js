@@ -3,15 +3,15 @@ import mongoose from "mongoose";
 const orderSchema = new mongoose.Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
+
       required: true,
-      ref: "User",
     },
     items: [
       {
         product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
+          type: String,
+
           required: true,
         },
         quantity: { type: Number, required: true },
@@ -19,8 +19,8 @@ const orderSchema = new mongoose.Schema(
     ],
     amount: { type: Number, required: true },
     address: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Address",
+      type: String,
+
       required: true,
     },
     status: { type: String, default: "Order Placed", required: true },
