@@ -24,7 +24,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
     status: { type: String, default: "Order Placed", required: true },
-    date: { type: Number, required: true },
+    date: { type: Number, default: Date.now },
   },
   { timestamps: true }
 );
