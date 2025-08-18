@@ -1,3 +1,4 @@
+import connectDB from "@/config/db";
 import { inngest } from "@/config/inngest";
 import Product from "@/models/Product";
 import User from "@/models/user";
@@ -15,7 +16,7 @@ export async function POST(request) {
         message: "Invalid data",
       });
     }
-
+    await connectDB();
     // calculate amount
     let amount = 0;
     for (const item of items) {
