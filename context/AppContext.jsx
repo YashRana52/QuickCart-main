@@ -25,7 +25,19 @@ export const AppContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({});
 
   const fetchProductData = async () => {
-    setProducts(productsDummyData);
+    const token = await getToken();
+    try {
+      const { data } = await axios.get("/api/product/list", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data.success) {
+        setProducts(data.products);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const fetchUserData = async () => {
@@ -50,23 +62,63 @@ export const AppContextProvider = (props) => {
   };
 
   const addToCart = async (itemId) => {
-    let cartData = structuredClone(cartItems);
+    const prevCart = { ...cartItems };
+    let cartData = { ...cartItems };
+
     if (cartData[itemId]) {
       cartData[itemId] += 1;
     } else {
       cartData[itemId] = 1;
     }
+
     setCartItems(cartData);
+
+    if (user) {
+      try {
+        const token = await getToken();
+
+        await axios.post(
+          "/api/cart/update",
+          { cartData },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success("Item added to cart ✅");
+      } catch (error) {
+        toast.error("Failed to update cart ❌");
+        setCartItems(prevCart);
+      }
+    }
   };
 
   const updateCartQuantity = async (itemId, quantity) => {
-    let cartData = structuredClone(cartItems);
+    const prevCart = { ...cartItems };
+    let cartData = { ...cartItems };
+
     if (quantity === 0) {
       delete cartData[itemId];
     } else {
       cartData[itemId] = quantity;
     }
+
     setCartItems(cartData);
+
+    if (user) {
+      try {
+        const token = await getToken();
+
+        await axios.post(
+          "/api/cart/update",
+          { cartData },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success("Cart updated ✅");
+      } catch (error) {
+        setCartItems(prevCart); // rollback if API fails
+        toast.error("Failed to update cart ❌");
+      }
+    }
   };
 
   const getCartCount = () => {
